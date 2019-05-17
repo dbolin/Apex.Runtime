@@ -110,7 +110,7 @@ namespace Apex.Runtime
             return _objectSizes.GetOrAdd(type,
                 t =>
                 {
-                    var (size, overhead) = ObjectLayoutInspector.InspectorHelper.GetSize(t);
+                    var (size, overhead) = ObjectLayoutInspector.TypeInspector.GetSize(t);
                     return size + overhead;
                 });
         }
