@@ -24,6 +24,11 @@ namespace Apex.Runtime
 
         public long SizeOf<T>(T obj)
         {
+            if(obj is null)
+            {
+                return IntPtr.Size;
+            }
+
             try
             {
                 if (Type<T>.IsSealed)

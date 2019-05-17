@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Apex.Runtime
 {
@@ -51,77 +52,95 @@ namespace Apex.Runtime
 
                 statements.Add(Expression.Assign(result, Expression.Constant(0L)));
 
-                if (type.IsArray)
+                if (typeof(Task).IsAssignableFrom(type) || type == typeof(ValueTask) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ValueTask<>)))
                 {
-                    var elementType = type.GetElementType();
-                    var dimensions = type.GetArrayRank();
-                    var lengths = new List<ParameterExpression>();
-                    for (int i = 0; i < dimensions; ++i)
-                    {
-                        lengths.Add(Expression.Variable(typeof(int)));
-                    }
+                    var resultProperty = type.GetProperty("Result");
 
-                    var loopExpressions = new List<Expression>();
-                    loopExpressions.AddRange(lengths.Select((x, i) =>
-                        Expression.Assign(x, Expression.Call(castedSource, "GetLength", Array.Empty<Type>(), Expression.Constant(i)))));
-
-                    if (HasNoReferences(elementType))
+                    if (resultProperty == null)
                     {
-                        loopExpressions.Add(
-                            Expression.AddAssign(result,
-                                lengths.Select(x => Expression.Convert(x, typeof(long))).Aggregate((Expression)Expression.Constant(GetSizeOfType(elementType)), (x, y) => Expression.Multiply(x, y))));
-                        statements.Add(Expression.Block(lengths, loopExpressions));
+                        statements.Add(Expression.AddAssign(result, Expression.Constant(GetSizeOfType(type))));
                     }
                     else
                     {
-                        var indices = new List<ParameterExpression>();
-                        var breakLabels = new List<LabelTarget>();
-                        var continueLabels = new List<LabelTarget>();
+                        var resultType = resultProperty.PropertyType;
 
-                        for (int i = 0; i < dimensions; ++i)
-                        {
-                            indices.Add(Expression.Variable(typeof(int)));
-                            breakLabels.Add(Expression.Label());
-                            continueLabels.Add(Expression.Label());
-                        }
-
-                        var accessExpression = dimensions > 1
-                            ? (Expression)Expression.ArrayIndex(castedSource, indices)
-                            : Expression.ArrayIndex(castedSource, indices[0]);
-
-                        Expression getSize = Expression.AddAssign(result, GetSizeExpression(elementType, memory, accessExpression));
-
-                        var loop = getSize;
-
-                        for (int i = 0; i < dimensions; ++i)
-                        {
-                            loop =
-                                Expression.Block(
-                                    Expression.Assign(indices[i], Expression.Constant(0)),
-                                    Expression.Loop(Expression.IfThenElse(
-                                        Expression.GreaterThanOrEqual(indices[i], lengths[i]),
-                                        Expression.Break(breakLabels[i]),
-                                        Expression.Block(loop, Expression.Label(continueLabels[i]), Expression.Assign(indices[i], Expression.Increment(indices[i])))
-                                    ), breakLabels[i])
-                                );
-                        }
-
-                        loopExpressions.Add(Expression.Block(indices, loop));
-
-                        statements.Add(Expression.Block(lengths, loopExpressions));
+                        statements.Add(Expression.AddAssign(result,
+                            Expression.Add(GetSizeExpression(resultType, memory, Expression.Property(castedSource, resultProperty)), Expression.Constant(GetSizeOfType(type)))));
                     }
-
-                    statements.Add(Expression.AddAssign(result, Expression.Constant((long)IntPtr.Size * 3)));
                 }
                 else
                 {
-                    statements.Add(Expression.AddAssign(result, Expression.Constant(GetSizeOfType(type))));
+                    if (type.IsArray)
+                    {
+                        var elementType = type.GetElementType();
+                        var dimensions = type.GetArrayRank();
+                        var lengths = new List<ParameterExpression>();
+                        for (int i = 0; i < dimensions; ++i)
+                        {
+                            lengths.Add(Expression.Variable(typeof(int)));
+                        }
+
+                        var loopExpressions = new List<Expression>();
+                        loopExpressions.AddRange(lengths.Select((x, i) =>
+                            Expression.Assign(x, Expression.Call(castedSource, "GetLength", Array.Empty<Type>(), Expression.Constant(i)))));
+
+                        if (HasNoReferences(elementType))
+                        {
+                            loopExpressions.Add(
+                                Expression.AddAssign(result,
+                                    lengths.Select(x => Expression.Convert(x, typeof(long))).Aggregate((Expression)Expression.Constant(GetSizeOfType(elementType)), (x, y) => Expression.Multiply(x, y))));
+                            statements.Add(Expression.Block(lengths, loopExpressions));
+                        }
+                        else
+                        {
+                            var indices = new List<ParameterExpression>();
+                            var breakLabels = new List<LabelTarget>();
+                            var continueLabels = new List<LabelTarget>();
+
+                            for (int i = 0; i < dimensions; ++i)
+                            {
+                                indices.Add(Expression.Variable(typeof(int)));
+                                breakLabels.Add(Expression.Label());
+                                continueLabels.Add(Expression.Label());
+                            }
+
+                            var accessExpression = dimensions > 1
+                                ? (Expression)Expression.ArrayIndex(castedSource, indices)
+                                : Expression.ArrayIndex(castedSource, indices[0]);
+
+                            Expression getSize = Expression.AddAssign(result, GetSizeExpression(elementType, memory, accessExpression));
+
+                            var loop = getSize;
+
+                            for (int i = 0; i < dimensions; ++i)
+                            {
+                                loop =
+                                    Expression.Block(
+                                        Expression.Assign(indices[i], Expression.Constant(0)),
+                                        Expression.Loop(Expression.IfThenElse(
+                                            Expression.GreaterThanOrEqual(indices[i], lengths[i]),
+                                            Expression.Break(breakLabels[i]),
+                                            Expression.Block(loop, Expression.Label(continueLabels[i]), Expression.Assign(indices[i], Expression.Increment(indices[i])))
+                                        ), breakLabels[i])
+                                    );
+                            }
+
+                            loopExpressions.Add(Expression.Block(indices, loop));
+
+                            statements.Add(Expression.Block(lengths, loopExpressions));
+                        }
+
+                        statements.Add(Expression.AddAssign(result, Expression.Constant((long)IntPtr.Size * 3)));
+                    }
+                    else
+                    {
+                        statements.Add(Expression.AddAssign(result, Expression.Constant(GetSizeOfType(type))));
+                    }
+
+                    var fields = TypeFields.GetFields(type);
+                    statements.AddRange(GetReferenceSizes(fields, castedSource, memory).Select(x => Expression.AddAssign(result, x)));
+                    statements.Add(result);
                 }
-
-                var fields = TypeFields.GetFields(type);
-                statements.AddRange(GetReferenceSizes(fields, castedSource, memory).Select(x => Expression.AddAssign(result, x)));
-
-                statements.Add(result);
 
                 var lambda = Expression.Lambda(Expression.Block(localVariables, statements), $"Apex.Runtime.Memory_SizeOf_{type.FullName}", new[] { source, memory }).Compile();
 
@@ -131,6 +150,11 @@ namespace Apex.Runtime
             private static bool HasNoReferences(Type elementType)
             {
                 if (elementType == typeof(string))
+                {
+                    return false;
+                }
+
+                if(elementType.IsArray)
                 {
                     return false;
                 }
@@ -152,6 +176,23 @@ namespace Apex.Runtime
                     }
 
                     var subSource = Expression.MakeMemberAccess(source, field);
+
+                    if (typeof(Task).IsAssignableFrom(fieldType))
+                    {
+                        var resultProperty = fieldType.GetProperty("Result");
+
+                        if (resultProperty == null)
+                        {
+                            yield return Expression.Constant(GetSizeOfType(fieldType));
+                            continue;
+                        }
+
+                        var resultType = resultProperty.PropertyType;
+
+                        yield return Expression.Add(GetSizeExpression(resultType, memory, Expression.Property(subSource, resultProperty)), Expression.Constant(GetSizeOfType(fieldType)));
+                        continue;
+                    }
+
                     if (fieldType.IsValueType)
                     {
                         var fieldTypeFields = TypeFields.GetFields(fieldType);
@@ -177,6 +218,20 @@ namespace Apex.Runtime
                            Expression.Constant(0L),
                            Expression.Add(Expression.Constant((long)IntPtr.Size * 3), Expression.Convert(Expression.Property(access, "Length"), typeof(long)))
                            );
+                }
+
+                if(typeof(Task).IsAssignableFrom(type))
+                {
+                    var resultProperty = type.GetProperty("Result");
+
+                    if(resultProperty == null)
+                    {
+                        return Expression.Constant(GetSizeOfType(type));
+                    }
+
+                    var resultType = resultProperty.PropertyType;
+
+                    return Expression.Add(GetSizeExpression(resultType, memory, Expression.Property(access, resultProperty)), Expression.Constant(GetSizeOfType(type)));
                 }
 
                 if (type.IsPointer)
