@@ -84,5 +84,15 @@ namespace Apex.Runtime.Tests
 
             sut.SizeOf(x).Should().Be(4060);
         }
+
+        [Fact]
+        public void Strings()
+        {
+            var sut = new Memory(true);
+
+            sut.SizeOf("").Should().Be(22);
+            sut.SizeOf("abc").Should().Be(28);
+            sut.SizeOf(new string(' ', 100)).Should().Be(222);
+        }
     }
 }

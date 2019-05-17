@@ -68,6 +68,14 @@ namespace Apex.Runtime
                             Expression.Add(GetSizeExpression(resultType, memory, Expression.Property(castedSource, resultProperty)), Expression.Constant(GetSizeOfType(type)))));
                     }
                 }
+                else if (type == typeof(string))
+                {
+                    statements.Add(Expression.AddAssign(result, Expression.Condition(
+                           Expression.ReferenceEqual(castedSource, Expression.Constant(null)),
+                           Expression.Constant(0L),
+                           Expression.Add(Expression.Constant((long)IntPtr.Size * 2 + 6), Expression.Convert(Expression.Multiply(Expression.Constant(2), Expression.Property(castedSource, "Length")), typeof(long)))
+                           )));
+                }
                 else
                 {
                     if (type.IsArray)
@@ -216,7 +224,7 @@ namespace Apex.Runtime
                     return Expression.Condition(
                            Expression.ReferenceEqual(access, Expression.Constant(null)),
                            Expression.Constant(0L),
-                           Expression.Add(Expression.Constant((long)IntPtr.Size * 3), Expression.Convert(Expression.Property(access, "Length"), typeof(long)))
+                           Expression.Add(Expression.Constant((long)IntPtr.Size * 2 + 6), Expression.Convert(Expression.Multiply(Expression.Constant(2), Expression.Property(access, "Length")), typeof(long)))
                            );
                 }
 
