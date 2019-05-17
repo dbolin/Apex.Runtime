@@ -34,47 +34,47 @@ namespace Apex.Runtime.Tests
         [Fact]
         public void Test1()
         {
-            var sut = new Memory();
+            var sut = new Memory(true);
 
             var x = new Test { Test2 = new Test2 { Test3 = new Test3 { } } };
 
-            sut.SizeOfGraph(x).Should().Be(72);
+            sut.SizeOf(x).Should().Be(72);
         }
 
         [Fact]
         public void Object()
         {
-            var sut = new Memory();
+            var sut = new Memory(true);
 
-            sut.SizeOfGraph(new object()).Should().Be(24);
+            sut.SizeOf(new object()).Should().Be(24);
         }
 
         [Fact]
         public void Loops()
         {
-            var sut = new Memory();
+            var sut = new Memory(true);
 
             var x = new TestLoop();
             var y = new TestLoop { x = x };
             x.y = y;
 
-            sut.SizeOfGraph(x).Should().Be(64);
+            sut.SizeOf(x).Should().Be(64);
         }
 
         [Fact]
         public void Array()
         {
-            var sut = new Memory();
+            var sut = new Memory(true);
 
             var arr = new int[4];
 
-            sut.SizeOfGraph(arr).Should().Be(40);
+            sut.SizeOf(arr).Should().Be(40);
         }
 
         [Fact]
         public void Dictionary()
         {
-            var sut = new Memory();
+            var sut = new Memory(true);
 
             var x = new Dictionary<int, int>();
             for (int i = 0; i < 100; ++i)
@@ -82,7 +82,7 @@ namespace Apex.Runtime.Tests
                 x.Add(i, i);
             }
 
-            sut.SizeOfGraph(x).Should().Be(4060);
+            sut.SizeOf(x).Should().Be(4060);
         }
     }
 }

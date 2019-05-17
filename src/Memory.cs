@@ -7,12 +7,22 @@ namespace Apex.Runtime
     public sealed partial class Memory
     {
         private static ConcurrentDictionary<Type, int> _objectSizes = new ConcurrentDictionary<Type, int>();
-        private readonly DictionarySlim<Type, Func<object, Memory, long>> VirtualMethods = new DictionarySlim<Type, Func<object, Memory, long>>();
-        private readonly DictionarySlim<object, int> _objectLookup = new DictionarySlim<object, int>();
+        private readonly DictionarySlim<Type, Func<object, Memory, long>> _virtualMethods = new DictionarySlim<Type, Func<object, Memory, long>>();
+        private readonly DictionarySlim<object, int> _objectLookup;
+        private readonly bool _graph;
         private Func<object, Memory, long> _lastMethod;
         private Type _lastType;
 
-        public long SizeOfGraph<T>(T obj)
+        public Memory(bool graph)
+        {
+            _graph = graph;
+            if(graph)
+            {
+                _objectLookup = new DictionarySlim<object, int>();
+            }
+        }
+
+        public long SizeOf<T>(T obj)
         {
             try
             {
@@ -25,7 +35,7 @@ namespace Apex.Runtime
             }
             finally
             {
-                _objectLookup.Clear();
+                _objectLookup?.Clear();
             }
         }
 
@@ -36,13 +46,16 @@ namespace Apex.Runtime
                 return 0;
             }
 
-            ref int x = ref _objectLookup.GetOrAddValueRef(obj);
-            if(x != 0)
+            if (_graph)
             {
-                return 0;
-            }
+                ref int x = ref _objectLookup.GetOrAddValueRef(obj);
+                if (x != 0)
+                {
+                    return 0;
+                }
 
-            x = 1;
+                x = 1;
+            }
 
             var type = obj.GetType();
 
@@ -51,7 +64,7 @@ namespace Apex.Runtime
                 return _lastMethod(obj, this);
             }
 
-            ref var method = ref VirtualMethods.GetOrAddValueRef(type);
+            ref var method = ref _virtualMethods.GetOrAddValueRef(type);
 
             if (method == null)
             {
@@ -71,7 +84,7 @@ namespace Apex.Runtime
                 return 0;
             }
 
-            if (!Type<T>.IsValueType)
+            if (!Type<T>.IsValueType && _graph)
             {
                 ref int x = ref _objectLookup.GetOrAddValueRef(obj);
                 if (x != 0)

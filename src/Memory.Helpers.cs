@@ -21,7 +21,7 @@ namespace Apex.Runtime
 
             internal static Delegate GenerateMethod(Type type, bool isVirtual)
             {
-                if(!isVirtual)
+                if (!isVirtual)
                 {
                     return GenerateMethodImpl(type, isVirtual);
                 }
@@ -64,42 +64,54 @@ namespace Apex.Runtime
                     var loopExpressions = new List<Expression>();
                     loopExpressions.AddRange(lengths.Select((x, i) =>
                         Expression.Assign(x, Expression.Call(castedSource, "GetLength", Array.Empty<Type>(), Expression.Constant(i)))));
-                    var indices = new List<ParameterExpression>();
-                    var breakLabels = new List<LabelTarget>();
-                    var continueLabels = new List<LabelTarget>();
 
-                    for (int i = 0; i < dimensions; ++i)
+                    if (HasNoReferences(elementType))
                     {
-                        indices.Add(Expression.Variable(typeof(int)));
-                        breakLabels.Add(Expression.Label());
-                        continueLabels.Add(Expression.Label());
+                        loopExpressions.Add(
+                            Expression.AddAssign(result,
+                                lengths.Select(x => Expression.Convert(x, typeof(long))).Aggregate((Expression)Expression.Constant(GetSizeOfType(elementType)), (x, y) => Expression.Multiply(x, y))));
+                        statements.Add(Expression.Block(lengths, loopExpressions));
+                    }
+                    else
+                    {
+                        var indices = new List<ParameterExpression>();
+                        var breakLabels = new List<LabelTarget>();
+                        var continueLabels = new List<LabelTarget>();
+
+                        for (int i = 0; i < dimensions; ++i)
+                        {
+                            indices.Add(Expression.Variable(typeof(int)));
+                            breakLabels.Add(Expression.Label());
+                            continueLabels.Add(Expression.Label());
+                        }
+
+                        var accessExpression = dimensions > 1
+                            ? (Expression)Expression.ArrayIndex(castedSource, indices)
+                            : Expression.ArrayIndex(castedSource, indices[0]);
+
+                        Expression getSize = Expression.AddAssign(result, GetSizeExpression(elementType, memory, accessExpression));
+
+                        var loop = getSize;
+
+                        for (int i = 0; i < dimensions; ++i)
+                        {
+                            loop =
+                                Expression.Block(
+                                    Expression.Assign(indices[i], Expression.Constant(0)),
+                                    Expression.Loop(Expression.IfThenElse(
+                                        Expression.GreaterThanOrEqual(indices[i], lengths[i]),
+                                        Expression.Break(breakLabels[i]),
+                                        Expression.Block(loop, Expression.Label(continueLabels[i]), Expression.Assign(indices[i], Expression.Increment(indices[i])))
+                                    ), breakLabels[i])
+                                );
+                        }
+
+                        loopExpressions.Add(Expression.Block(indices, loop));
+
+                        statements.Add(Expression.Block(lengths, loopExpressions));
                     }
 
-                    var accessExpression = dimensions > 1
-                        ? (Expression)Expression.ArrayIndex(castedSource, indices)
-                        : Expression.ArrayIndex(castedSource, indices[0]);
-
-                    Expression getSize = Expression.AddAssign(result, GetSizeExpression(elementType, memory, accessExpression));
-
-                    var loop = getSize;
-
-                    for (int i = 0; i < dimensions; ++i)
-                    {
-                        loop =
-                            Expression.Block(
-                                Expression.Assign(indices[i], Expression.Constant(0)),
-                                Expression.Loop(Expression.IfThenElse(
-                                    Expression.GreaterThanOrEqual(indices[i], lengths[i]),
-                                    Expression.Break(breakLabels[i]),
-                                    Expression.Block(loop, Expression.Label(continueLabels[i]), Expression.Assign(indices[i], Expression.Increment(indices[i])))
-                                ), breakLabels[i])
-                            );
-                    }
-
-                    loopExpressions.Add(Expression.Block(indices, loop));
-
-                    statements.Add(Expression.Block(lengths, loopExpressions));
-                    statements.Add(Expression.AddAssign(result, Expression.Constant(24L)));
+                    statements.Add(Expression.AddAssign(result, Expression.Constant((long)IntPtr.Size * 3)));
                 }
                 else
                 {
@@ -116,14 +128,25 @@ namespace Apex.Runtime
                 return lambda;
             }
 
+            private static bool HasNoReferences(Type elementType)
+            {
+                if (elementType == typeof(string))
+                {
+                    return false;
+                }
+
+                var fields = TypeFields.GetFields(elementType);
+                return fields.All(x => x.FieldType.IsPrimitive || x.FieldType.IsValueType && HasNoReferences(x.FieldType));
+            }
+
             private static IEnumerable<Expression> GetReferenceSizes(List<FieldInfo> fields,
                 Expression source,
-                ParameterExpression memory)
+                Expression memory)
             {
-                foreach(var field in fields)
+                foreach (var field in fields)
                 {
                     var fieldType = field.FieldType;
-                    if(fieldType.IsPrimitive)
+                    if (fieldType.IsPrimitive)
                     {
                         continue;
                     }
@@ -133,7 +156,7 @@ namespace Apex.Runtime
                     {
                         var fieldTypeFields = TypeFields.GetFields(fieldType);
                         var subSizes = GetReferenceSizes(fieldTypeFields, subSource, memory);
-                        foreach(var subResult in subSizes)
+                        foreach (var subResult in subSizes)
                         {
                             yield return subResult;
                         }
@@ -147,8 +170,47 @@ namespace Apex.Runtime
 
             private static Expression GetSizeExpression(Type type, Expression memory, Expression access)
             {
+                if (type == typeof(string))
+                {
+                    return Expression.Condition(
+                           Expression.ReferenceEqual(access, Expression.Constant(null)),
+                           Expression.Constant(0L),
+                           Expression.Add(Expression.Constant((long)IntPtr.Size * 3), Expression.Convert(Expression.Property(access, "Length"), typeof(long)))
+                           );
+                }
+
+                if (type.IsPointer)
+                {
+                    return Expression.Constant((long)IntPtr.Size);
+                }
+
+                if (type.IsArray)
+                {
+                    return Expression.Call(memory, "GetSizeOfSealedInternal", new Type[] { type }, access);
+                }
+
                 if (type.IsSealed)
                 {
+                    if (type.IsValueType)
+                    {
+                        var fields = TypeFields.GetFields(type);
+                        var all = GetReferenceSizes(fields, access, memory).Aggregate((Expression)Expression.Constant(0L), (x, y) => Expression.Add(x, y));
+
+                        return Expression.Add(all, Expression.Constant(GetSizeOfType(type)));
+                    }
+
+                    if (HasNoReferences(type))
+                    {
+                        var fields = TypeFields.GetFields(type);
+                        var all = GetReferenceSizes(fields, access, memory).Aggregate((Expression)Expression.Constant(0L), (x, y) => Expression.Add(x, y));
+
+                        return Expression.Condition(
+                           Expression.ReferenceEqual(access, Expression.Constant(null)),
+                           Expression.Constant(0L),
+                           Expression.Add(all, Expression.Constant(GetSizeOfType(type)))
+                           );
+                    }
+
                     return Expression.Call(memory, "GetSizeOfSealedInternal", new Type[] { type }, access);
                 }
                 else

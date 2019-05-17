@@ -5,7 +5,9 @@ VisualStudioVersion = 16.0.28803.452
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apex.Runtime", "src\Apex.Runtime.csproj", "{C6C82B0F-F4A0-4E90-B079-059A3000F303}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apex.Runtime.Tests", "..\Apex.Runtime/tests\Apex.Runtime.Tests\Apex.Runtime.Tests.csproj", "{6ACF4D4A-8CB8-4043-865C-5B4F0C8C4E50}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apex.Runtime.Tests", "tests\Apex.Runtime.Tests\Apex.Runtime.Tests.csproj", "{6ACF4D4A-8CB8-4043-865C-5B4F0C8C4E50}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "Benchmarks\Benchmarks.csproj", "{B36DE1A4-A269-4C7C-9CDE-0265B4DEBB9D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{6ACF4D4A-8CB8-4043-865C-5B4F0C8C4E50}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6ACF4D4A-8CB8-4043-865C-5B4F0C8C4E50}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6ACF4D4A-8CB8-4043-865C-5B4F0C8C4E50}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B36DE1A4-A269-4C7C-9CDE-0265B4DEBB9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B36DE1A4-A269-4C7C-9CDE-0265B4DEBB9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B36DE1A4-A269-4C7C-9CDE-0265B4DEBB9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B36DE1A4-A269-4C7C-9CDE-0265B4DEBB9D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
