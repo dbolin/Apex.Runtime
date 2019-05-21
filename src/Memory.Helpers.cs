@@ -248,18 +248,6 @@ namespace Apex.Runtime
                         return Expression.Add(all, Expression.Constant(GetSizeOfType(type)));
                     }
 
-                    if (HasNoReferences(type))
-                    {
-                        var fields = TypeFields.GetFields(type);
-                        var all = GetReferenceSizes(fields, access, memory).Aggregate((Expression)Expression.Constant(0L), (x, y) => Expression.Add(x, y));
-
-                        return Expression.Condition(
-                           Expression.ReferenceEqual(access, Expression.Constant(null)),
-                           Expression.Constant(0L),
-                           Expression.Add(all, Expression.Constant(GetSizeOfType(type)))
-                           );
-                    }
-
                     return Expression.Call(memory, "GetSizeOfSealedInternal", new Type[] { type }, access);
                 }
                 else

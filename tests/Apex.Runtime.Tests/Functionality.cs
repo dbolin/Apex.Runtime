@@ -42,6 +42,8 @@ namespace Apex.Runtime.Tests
         [Fact]
         public void Test1()
         {
+            sut.SizeOf<string>(null).Should().Be(8);
+
             var x = new Test { Test2 = new Test2 { Test3 = new Test3 { } } };
 
             sut.SizeOf(x).Should().Be(72);
@@ -140,6 +142,15 @@ namespace Apex.Runtime.Tests
             sut.SizeOf(new ValueTask<int>(4)).Should().Be(20);
 
             sut.SizeOf(new ValueTask(Task.Delay(1))).Should().Be(121);
+        }
+
+        private sealed class SealedC { }
+
+        [Fact]
+        public void Graph()
+        {
+            var o = new SealedC();
+            sut.SizeOf(new { a = o, b = o, c = o }).Should().Be(64);
         }
     }
 
