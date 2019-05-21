@@ -114,7 +114,7 @@ namespace Apex.Runtime.Tests
             TestFinalizer.FinalizerWasCalled.Should().BeLessOrEqualTo(1);
         }
 
-        private unsafe struct AP
+        private unsafe class AP
         {
             public char* t;
         }
@@ -126,7 +126,7 @@ namespace Apex.Runtime.Tests
 
             sut.SizeOf(new { a = new IntPtr() }).Should().Be(IntPtr.Size * 3);
 
-            sut.SizeOf(new AP()).Should().Be(8);
+            sut.SizeOf(new AP[1] { new AP() }).Should().Be(32);
         }
 
         [Fact]
