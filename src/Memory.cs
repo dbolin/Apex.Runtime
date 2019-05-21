@@ -8,14 +8,12 @@ namespace Apex.Runtime
     {
         private static ConcurrentDictionary<Type, int> _objectSizes = new ConcurrentDictionary<Type, int>();
         private readonly DictionarySlim<Type, Func<object, Memory, long>> _virtualMethods = new DictionarySlim<Type, Func<object, Memory, long>>();
-        private readonly DictionarySlim<object, int> _objectLookup;
-        private readonly bool _graph;
-        private Func<object, Memory, long> _lastMethod;
-        private Type _lastType;
+        private readonly DictionarySlim<object, int>? _objectLookup;
+        private Func<object, Memory, long>? _lastMethod;
+        private Type? _lastType;
 
         public Memory(bool graph)
         {
-            _graph = graph;
             if(graph)
             {
                 _objectLookup = new DictionarySlim<object, int>();
@@ -51,7 +49,7 @@ namespace Apex.Runtime
                 return 0;
             }
 
-            if (_graph)
+            if (_objectLookup != null)
             {
                 ref int x = ref _objectLookup.GetOrAddValueRef(obj);
                 if (x != 0)
@@ -66,7 +64,7 @@ namespace Apex.Runtime
 
             if (_lastType == type)
             {
-                return _lastMethod(obj, this);
+                return _lastMethod!(obj, this);
             }
 
             ref var method = ref _virtualMethods.GetOrAddValueRef(type);
@@ -89,7 +87,7 @@ namespace Apex.Runtime
                 return 0;
             }
 
-            if (!Type<T>.IsValueType && _graph)
+            if (!Type<T>.IsValueType && _objectLookup != null)
             {
                 ref int x = ref _objectLookup.GetOrAddValueRef(obj);
                 if (x != 0)

@@ -107,6 +107,16 @@ namespace Apex.Runtime.Tests
 
             TestFinalizer.FinalizerWasCalled.Should().BeLessOrEqualTo(1);
         }
+
+        [Fact]
+        public void Pointers()
+        {
+            var sut = new Memory(true);
+
+            sut.SizeOf(new IntPtr()).Should().Be(IntPtr.Size);
+
+            sut.SizeOf(new { a = new IntPtr() }).Should().Be(IntPtr.Size * 3);
+        }
     }
 
     internal class TestFinalizer

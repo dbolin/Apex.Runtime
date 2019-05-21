@@ -52,29 +52,10 @@ namespace Apex.Runtime
 
                 statements.Add(Expression.Assign(result, Expression.Constant(0L)));
 
-                if (typeof(Task).IsAssignableFrom(type) || type == typeof(ValueTask) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ValueTask<>)))
+                var specificSizeExpression = GetSpecificSizeExpression(type, memory, castedSource);
+                if(specificSizeExpression != null)
                 {
-                    var resultProperty = type.GetProperty("Result");
-
-                    if (resultProperty == null)
-                    {
-                        statements.Add(Expression.AddAssign(result, Expression.Constant(GetSizeOfType(type))));
-                    }
-                    else
-                    {
-                        var resultType = resultProperty.PropertyType;
-
-                        statements.Add(Expression.AddAssign(result,
-                            Expression.Add(GetSizeExpression(resultType, memory, Expression.Property(castedSource, resultProperty)), Expression.Constant(GetSizeOfType(type)))));
-                    }
-                }
-                else if (type == typeof(string))
-                {
-                    statements.Add(Expression.AddAssign(result, Expression.Condition(
-                           Expression.ReferenceEqual(castedSource, Expression.Constant(null)),
-                           Expression.Constant(0L),
-                           Expression.Add(Expression.Constant((long)IntPtr.Size * 2 + 6), Expression.Convert(Expression.Multiply(Expression.Constant(2), Expression.Property(castedSource, "Length")), typeof(long)))
-                           )));
+                    statements.Add(Expression.AddAssign(result, specificSizeExpression));
                 }
                 else
                 {
@@ -143,10 +124,10 @@ namespace Apex.Runtime
                     else
                     {
                         statements.Add(Expression.AddAssign(result, Expression.Constant(GetSizeOfType(type))));
+                        var fields = TypeFields.GetFields(type);
+                        statements.AddRange(GetReferenceSizes(fields, castedSource, memory).Select(x => Expression.AddAssign(result, x)));
                     }
 
-                    var fields = TypeFields.GetFields(type);
-                    statements.AddRange(GetReferenceSizes(fields, castedSource, memory).Select(x => Expression.AddAssign(result, x)));
                     statements.Add(result);
                 }
 
@@ -178,7 +159,7 @@ namespace Apex.Runtime
                 foreach (var field in fields)
                 {
                     var fieldType = field.FieldType;
-                    if (fieldType.IsPrimitive)
+                    if (fieldType.IsPrimitive || fieldType.IsPointer)
                     {
                         continue;
                     }
@@ -217,7 +198,7 @@ namespace Apex.Runtime
                 }
             }
 
-            private static Expression GetSizeExpression(Type type, Expression memory, Expression access)
+            private static Expression? GetSpecificSizeExpression(Type type, Expression memory, Expression access)
             {
                 if (type == typeof(string))
                 {
@@ -228,23 +209,37 @@ namespace Apex.Runtime
                            );
                 }
 
-                if(typeof(Task).IsAssignableFrom(type))
+                if (typeof(Task).IsAssignableFrom(type) || type == typeof(ValueTask) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ValueTask<>)))
                 {
                     var resultProperty = type.GetProperty("Result");
 
-                    if(resultProperty == null)
+                    if (resultProperty == null)
                     {
                         return Expression.Constant(GetSizeOfType(type));
                     }
+                    else
+                    {
+                        var resultType = resultProperty.PropertyType;
 
-                    var resultType = resultProperty.PropertyType;
-
-                    return Expression.Add(GetSizeExpression(resultType, memory, Expression.Property(access, resultProperty)), Expression.Constant(GetSizeOfType(type)));
+                        return Expression.Add(GetSizeExpression(resultType, memory, Expression.Property(access, resultProperty)), Expression.Constant(GetSizeOfType(type)));
+                    }
                 }
 
                 if (type.IsPointer)
                 {
                     return Expression.Constant((long)IntPtr.Size);
+                }
+
+                return null;
+            }
+
+            private static Expression GetSizeExpression(Type type, Expression memory, Expression access)
+            {
+                var specificSizeExpression = GetSpecificSizeExpression(type, memory, access);
+
+                if(specificSizeExpression != null)
+                {
+                    return specificSizeExpression;
                 }
 
                 if (type.IsArray)

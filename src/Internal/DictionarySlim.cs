@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 
 namespace Apex.Runtime.Internal
 {
+#nullable disable
     [ExcludeFromCodeCoverage]
     internal static partial class HashHelpers
     {
@@ -575,4 +576,5 @@ namespace Apex.Runtime.Internal
             }
         }
     }
+#nullable enable
 }

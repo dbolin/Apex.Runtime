@@ -146,7 +146,7 @@ namespace ObjectLayoutInspector
             var fields = TypeFields.GetFields(t);
             //var fields2 = t.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
 
-            Func<object, long[]> fieldOffsetInspector = GenerateFieldOffsetInspectionFunction(fields);
+            var fieldOffsetInspector = GenerateFieldOffsetInspectionFunction(fields);
 
             var (instance, success) = TryCreateInstanceSafe(t);
             if (!success)
@@ -154,7 +154,7 @@ namespace ObjectLayoutInspector
                 return Array.Empty<(FieldInfo, int)>();
             }
 
-            var addresses = fieldOffsetInspector(instance);
+            var addresses = fieldOffsetInspector(instance!);
 
             if (addresses.Length <= 1)
             {
@@ -243,7 +243,7 @@ namespace ObjectLayoutInspector
         /// * Open generic types like <code>typeof(List&lt;&gt;)</code>
         /// * Abstract types
         /// </remarks>
-        public static (object result, bool success) TryCreateInstanceSafe(Type t)
+        public static (object? result, bool success) TryCreateInstanceSafe(Type t)
         {
             if (!CanCreateInstance(t))
             {
@@ -266,10 +266,10 @@ namespace ObjectLayoutInspector
             // I've got null for some security related types.
             return Success(GetUninitializedObject(t));
 
-            static (object result, bool success) Success(object o) => (o, o != null);
+            static (object? result, bool success) Success(object? o) => (o, o != null);
         }
 
-        private static object GetUninitializedObject(Type t)
+        private static object? GetUninitializedObject(Type t)
         {
             try
             {
@@ -322,7 +322,7 @@ namespace ObjectLayoutInspector
         public static T MaxBy<T>(this IEnumerable<T> sequence, Func<T, int> selector)
         {
             bool firstElement = false;
-            T maxValue = default;
+            T maxValue = default!;
             foreach (T e in sequence)
             {
                 if (!firstElement)
