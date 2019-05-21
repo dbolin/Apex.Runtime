@@ -114,12 +114,19 @@ namespace Apex.Runtime.Tests
             TestFinalizer.FinalizerWasCalled.Should().BeLessOrEqualTo(1);
         }
 
+        private unsafe struct AP
+        {
+            public char* t;
+        }
+
         [Fact]
         public void Pointers()
         {
             sut.SizeOf(new IntPtr()).Should().Be(IntPtr.Size);
 
             sut.SizeOf(new { a = new IntPtr() }).Should().Be(IntPtr.Size * 3);
+
+            sut.SizeOf(new AP()).Should().Be(8);
         }
 
         [Fact]
@@ -151,6 +158,14 @@ namespace Apex.Runtime.Tests
         {
             var o = new SealedC();
             sut.SizeOf(new { a = o, b = o, c = o }).Should().Be(64);
+        }
+
+        [Fact]
+        public void Tree()
+        {
+            var sut2 = new Memory(false);
+            var o = new SealedC();
+            sut2.SizeOf(new { a = o, b = o, c = o }).Should().Be(112);
         }
     }
 
