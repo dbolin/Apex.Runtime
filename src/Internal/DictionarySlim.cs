@@ -6,11 +6,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Apex.Runtime.Internal
 {
+    [ExcludeFromCodeCoverage]
     internal static partial class HashHelpers
     {
         internal static readonly int[] DictionarySlimSizeOneIntArray = new int[1];
@@ -100,6 +102,7 @@ namespace Apex.Runtime.Internal
     /// </summary>
     [DebuggerTypeProxy(typeof(DictionarySlimDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
+    [ExcludeFromCodeCoverage]
     internal class DictionarySlim<TKey, TValue> : IReadOnlyCollection<KeyValuePair<TKey, TValue>>
     {
         // We want to initialize without allocating arrays. We also want to avoid null checks.
@@ -549,6 +552,7 @@ namespace Apex.Runtime.Internal
         }
     }
 
+    [ExcludeFromCodeCoverage]
     internal sealed class DictionarySlimDebugView<K, V>
     {
         private readonly DictionarySlim<K, V> _dictionary;
