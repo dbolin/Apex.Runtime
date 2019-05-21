@@ -94,5 +94,28 @@ namespace Apex.Runtime.Tests
             sut.SizeOf("abc").Should().Be(28);
             sut.SizeOf(new string(' ', 100)).Should().Be(222);
         }
+
+        [Fact]
+        public void FinalizerShouldNotBeCalledExtraTimes()
+        {
+            var sut = new Memory(true);
+
+            sut.SizeOf(new TestFinalizer());
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            TestFinalizer.FinalizerWasCalled.Should().Be(1);
+        }
+    }
+
+    internal class TestFinalizer
+    {
+        public static int FinalizerWasCalled;
+
+        ~TestFinalizer()
+        {
+            FinalizerWasCalled++;
+        }
     }
 }

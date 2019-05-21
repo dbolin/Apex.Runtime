@@ -273,7 +273,9 @@ namespace ObjectLayoutInspector
         {
             try
             {
-                return FormatterServices.GetUninitializedObject(t);
+                var result = FormatterServices.GetUninitializedObject(t);
+                GC.SuppressFinalize(result);
+                return result;
             }
             catch (TypeInitializationException)
             {
