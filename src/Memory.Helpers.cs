@@ -168,23 +168,7 @@ namespace Apex.Runtime
 
                     var subSource = Expression.MakeMemberAccess(source, field);
 
-                    if (typeof(Task).IsAssignableFrom(fieldType))
-                    {
-                        var resultProperty = fieldType.GetProperty("Result");
-
-                        if (resultProperty == null)
-                        {
-                            yield return Expression.Constant(GetSizeOfType(fieldType));
-                            continue;
-                        }
-
-                        var resultType = resultProperty.PropertyType;
-
-                        yield return Expression.Add(GetSizeExpression(resultType, memory, Expression.Property(subSource, resultProperty)), Expression.Constant(GetSizeOfType(fieldType)));
-                        continue;
-                    }
-
-                    if (fieldType.IsValueType)
+                    if (fieldType.IsValueType && !(fieldType == typeof(ValueTask) || (fieldType.IsGenericType && fieldType.GetGenericTypeDefinition() == typeof(ValueTask<>))))
                     {
                         var fieldTypeFields = TypeFields.GetFields(fieldType);
                         var subSizes = GetReferenceSizes(fieldTypeFields, subSource, memory);
@@ -217,6 +201,11 @@ namespace Apex.Runtime
 
                     if (resultProperty == null)
                     {
+                        if(type == typeof(ValueTask))
+                        {
+                            return Expression.Add(Expression.Constant(GetSizeOfType(type)), Expression.Call(memory, "GetSizeOfInternal", Array.Empty<Type>(), Expression.PropertyOrField(access, "_obj")));
+                        }
+
                         return Expression.Constant(GetSizeOfType(type));
                     }
                     else

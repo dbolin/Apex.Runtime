@@ -1,6 +1,7 @@
 using FluentAssertions;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Apex.Runtime.Tests
@@ -117,6 +118,28 @@ namespace Apex.Runtime.Tests
             sut.SizeOf(new IntPtr()).Should().Be(IntPtr.Size);
 
             sut.SizeOf(new { a = new IntPtr() }).Should().Be(IntPtr.Size * 3);
+        }
+
+        [Fact]
+        public void Tasks()
+        {
+            sut.SizeOf(Task.CompletedTask).Should().Be(64);
+
+            sut.SizeOf(Task.Delay(1)).Should().Be(105);
+
+            sut.SizeOf(Task.FromResult(4)).Should().Be(76);
+
+            sut.SizeOf(Task.FromResult(4L)).Should().Be(80);
+        }
+
+        [Fact]
+        public void ValueTasks()
+        {
+            sut.SizeOf(new ValueTask()).Should().Be(16);
+
+            sut.SizeOf(new ValueTask<int>(4)).Should().Be(20);
+
+            sut.SizeOf(new ValueTask(Task.Delay(1))).Should().Be(121);
         }
     }
 

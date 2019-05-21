@@ -129,14 +129,6 @@ namespace ObjectLayoutInspector
         }
 
         /// <summary>
-        /// Gets an array of field information and their offsets for <typeparamref name="T"/>.
-        /// </summary>
-        public static (FieldInfo fieldInfo, int offset)[] GetFieldOffsets<T>()
-        {
-            return GetFieldOffsets(typeof(T));
-        }
-
-        /// <summary>
         /// Gets an array of field information with their offsets for a given <paramref name="t"/>.
         /// </summary>
         public static (FieldInfo fieldInfo, int offset)[] GetFieldOffsets(Type t)
