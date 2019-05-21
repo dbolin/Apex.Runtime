@@ -82,7 +82,7 @@ namespace Apex.Runtime.Tests
                 x.Add(i, i);
             }
 
-            sut.SizeOf(x).Should().Be(4060);
+            sut.SizeOf(x).Should().Be(4068);
         }
 
         [Fact]
