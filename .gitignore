@@ -5,3 +5,5 @@
 /.vs
 bin
 obj
+*.trx
+/tests/Apex.Runtime.Tests/coverage.cobertura.xml
