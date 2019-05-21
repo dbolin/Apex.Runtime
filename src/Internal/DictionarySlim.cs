@@ -372,6 +372,7 @@ namespace Apex.Runtime.Internal
             public void Dispose() { }
         }
 
+        [ExcludeFromCodeCoverage]
         internal struct KeyCollection : ICollection<TKey>, IReadOnlyCollection<TKey>
         {
             private readonly DictionarySlim<TKey, TValue> _dictionary;
@@ -416,6 +417,7 @@ namespace Apex.Runtime.Internal
             IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => new Enumerator(_dictionary);
             IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
 
+            [ExcludeFromCodeCoverage]
             public struct Enumerator : IEnumerator<TKey>
             {
                 private readonly DictionarySlim<TKey, TValue> _dictionary;
@@ -462,6 +464,7 @@ namespace Apex.Runtime.Internal
             }
         }
 
+        [ExcludeFromCodeCoverage]
         public struct ValueCollection : ICollection<TValue>, IReadOnlyCollection<TValue>
         {
             private readonly DictionarySlim<TKey, TValue> _dictionary;
@@ -505,6 +508,7 @@ namespace Apex.Runtime.Internal
             IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => new Enumerator(_dictionary);
             IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
 
+            [ExcludeFromCodeCoverage]
             public struct Enumerator : IEnumerator<TValue>
             {
                 private readonly DictionarySlim<TKey, TValue> _dictionary;
