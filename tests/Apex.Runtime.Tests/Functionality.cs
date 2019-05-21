@@ -7,6 +7,8 @@ namespace Apex.Runtime.Tests
 {
     public class Functionality
     {
+        private readonly Memory sut;
+
         private struct Test3
         {
             public DateTime? test;
@@ -31,11 +33,14 @@ namespace Apex.Runtime.Tests
             public TestLoop y;
         }
 
+        public Functionality()
+        {
+            sut = new Memory(true);
+        }
+
         [Fact]
         public void Test1()
         {
-            var sut = new Memory(true);
-
             var x = new Test { Test2 = new Test2 { Test3 = new Test3 { } } };
 
             sut.SizeOf(x).Should().Be(72);
@@ -44,16 +49,12 @@ namespace Apex.Runtime.Tests
         [Fact]
         public void Object()
         {
-            var sut = new Memory(true);
-
             sut.SizeOf(new object()).Should().Be(24);
         }
 
         [Fact]
         public void Loops()
         {
-            var sut = new Memory(true);
-
             var x = new TestLoop();
             var y = new TestLoop { x = x };
             x.y = y;
@@ -64,18 +65,24 @@ namespace Apex.Runtime.Tests
         [Fact]
         public void Array()
         {
-            var sut = new Memory(true);
-
             var arr = new int[4];
 
             sut.SizeOf(arr).Should().Be(40);
+
+            sut.SizeOf(new[] { "", null, null }).Should().Be(46);
+        }
+
+        [Fact]
+        public void ArrayArray()
+        {
+            sut.SizeOf(new[] { new int[4], new int[4] }).Should().Be(96);
+
+            sut.SizeOf(new[] { new int[4], new int[4], null }).Should().Be(104);
         }
 
         [Fact]
         public void Dictionary()
         {
-            var sut = new Memory(true);
-
             var x = new Dictionary<int, int>();
             for (int i = 0; i < 100; ++i)
             {
@@ -88,8 +95,6 @@ namespace Apex.Runtime.Tests
         [Fact]
         public void Strings()
         {
-            var sut = new Memory(true);
-
             sut.SizeOf("").Should().Be(22);
             sut.SizeOf("abc").Should().Be(28);
             sut.SizeOf(new string(' ', 100)).Should().Be(222);
@@ -98,8 +103,6 @@ namespace Apex.Runtime.Tests
         [Fact]
         public void FinalizerShouldNotBeCalledExtraTimes()
         {
-            var sut = new Memory(true);
-
             sut.SizeOf(new TestFinalizer());
 
             GC.Collect();
@@ -111,8 +114,6 @@ namespace Apex.Runtime.Tests
         [Fact]
         public void Pointers()
         {
-            var sut = new Memory(true);
-
             sut.SizeOf(new IntPtr()).Should().Be(IntPtr.Size);
 
             sut.SizeOf(new { a = new IntPtr() }).Should().Be(IntPtr.Size * 3);

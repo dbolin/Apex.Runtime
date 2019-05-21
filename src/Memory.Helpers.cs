@@ -79,9 +79,13 @@ namespace Apex.Runtime
                                 Expression.AddAssign(result,
                                     lengths.Select(x => Expression.Convert(x, typeof(long))).Aggregate((Expression)Expression.Constant(GetSizeOfType(elementType)), (x, y) => Expression.Multiply(x, y))));
                             statements.Add(Expression.Block(lengths, loopExpressions));
+                            statements.Add(Expression.AddAssign(result, Expression.Constant((long)IntPtr.Size * 3)));
                         }
                         else
                         {
+                            loopExpressions.Add(Expression.AddAssign(result,
+                                    lengths.Select(x => Expression.Convert(x, typeof(long))).Aggregate((Expression)Expression.Constant((long)IntPtr.Size), (x, y) => Expression.Multiply(x, y))));
+
                             var indices = new List<ParameterExpression>();
                             var breakLabels = new List<LabelTarget>();
                             var continueLabels = new List<LabelTarget>();
@@ -118,8 +122,6 @@ namespace Apex.Runtime
 
                             statements.Add(Expression.Block(lengths, loopExpressions));
                         }
-
-                        statements.Add(Expression.AddAssign(result, Expression.Constant((long)IntPtr.Size * 3)));
                     }
                     else
                     {
