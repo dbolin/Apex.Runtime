@@ -1,6 +1,7 @@
 using FluentAssertions;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -39,6 +40,24 @@ namespace Apex.Runtime.Tests
             sut = new Memory(true);
         }
 
+        private void ExactSize<T>(Func<T> func, int adjustment = 0)
+        {
+            GC.Collect();
+
+            var s = GC.GetAllocatedBytesForCurrentThread();
+
+            var t = func();
+
+            GC.Collect();
+            var e = GC.GetAllocatedBytesForCurrentThread();
+
+            var actual = sut.SizeOf(t);
+
+            t = func();
+
+            actual.Should().Be(e - s + adjustment);
+        }
+
         [Fact]
         public void Test1()
         {
@@ -46,61 +65,58 @@ namespace Apex.Runtime.Tests
 
             var x = new Test { Test2 = new Test2 { Test3 = new Test3 { } } };
 
-            sut.SizeOf(x).Should().Be(72);
+            ExactSize(() => new Test { Test2 = new Test2 { Test3 = new Test3 { } } });
         }
 
         [Fact]
         public void Object()
         {
-            sut.SizeOf(new object()).Should().Be(24);
+            ExactSize(() => new object());
         }
 
         [Fact]
         public void Loops()
         {
-            var x = new TestLoop();
-            var y = new TestLoop { x = x };
-            x.y = y;
-
-            sut.SizeOf(x).Should().Be(64);
+            ExactSize(() =>
+            {
+                var x = new TestLoop();
+                var y = new TestLoop { x = x };
+                x.y = y;
+                return x;
+            });
         }
 
         [Fact]
         public void Array()
         {
-            var arr = new int[4];
+            ExactSize(() => new int[4]);
 
-            sut.SizeOf(arr).Should().Be(40);
+            ExactSize(() => new string[0]);
 
-            sut.SizeOf(new[] { "", null, null }).Should().Be(46);
+            ExactSize(() => new[] { new string(' ', 1), null, null });
         }
 
         [Fact]
         public void ArrayArray()
         {
-            sut.SizeOf(new[] { new int[4], new int[4] }).Should().Be(96);
+            ExactSize(() => new[] { new int[4], new int[4] });
 
-            sut.SizeOf(new[] { new int[4], new int[4], null }).Should().Be(104);
+            ExactSize(() => new[] { new int[4], new int[4], null });
         }
 
         [Fact]
         public void Dictionary()
         {
-            var x = new Dictionary<int, int>();
-            for (int i = 0; i < 100; ++i)
-            {
-                x.Add(i, i);
-            }
-
-            sut.SizeOf(x).Should().Be(4068);
+            ExactSize(() => new Dictionary<int, int>(100), -4);            
         }
 
         [Fact]
         public void Strings()
         {
-            sut.SizeOf("").Should().Be(22);
-            sut.SizeOf("abc").Should().Be(28);
-            sut.SizeOf(new string(' ', 100)).Should().Be(222);
+            for (int i = 0; i <= 100; ++i)
+            {
+                ExactSize(() => new string(' ', i));
+            }
         }
 
         [Fact]
@@ -124,9 +140,9 @@ namespace Apex.Runtime.Tests
         {
             sut.SizeOf(new IntPtr()).Should().Be(IntPtr.Size);
 
-            sut.SizeOf(new { a = new IntPtr() }).Should().Be(IntPtr.Size * 3);
+            ExactSize(() => new { a = new IntPtr() });
 
-            sut.SizeOf(new AP[1] { new AP() }).Should().Be(32);
+            ExactSize(() => new AP[1] { new AP() });
         }
 
         [Fact]
@@ -156,8 +172,11 @@ namespace Apex.Runtime.Tests
         [Fact]
         public void Graph()
         {
-            var o = new SealedC();
-            sut.SizeOf(new { a = o, b = o, c = o }).Should().Be(64);
+            ExactSize(() =>
+            {
+                var o = new SealedC();
+                return new { a = o, b = o, c = o };
+            });
         }
 
         [Fact]

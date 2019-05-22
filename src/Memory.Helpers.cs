@@ -61,6 +61,7 @@ namespace Apex.Runtime
                 {
                     if (type.IsArray)
                     {
+                        statements.Add(Expression.AddAssign(result, Expression.Constant((long)IntPtr.Size * 3)));
                         var elementType = type.GetElementType();
                         var dimensions = type.GetArrayRank();
                         var lengths = new List<ParameterExpression>();
@@ -79,7 +80,6 @@ namespace Apex.Runtime
                                 Expression.AddAssign(result,
                                     lengths.Select(x => Expression.Convert(x, typeof(long))).Aggregate((Expression)Expression.Constant(GetSizeOfType(elementType)), (x, y) => Expression.Multiply(x, y))));
                             statements.Add(Expression.Block(lengths, loopExpressions));
-                            statements.Add(Expression.AddAssign(result, Expression.Constant((long)IntPtr.Size * 3)));
                         }
                         else
                         {
@@ -191,7 +191,15 @@ namespace Apex.Runtime
                     return Expression.Condition(
                            Expression.ReferenceEqual(access, Expression.Constant(null)),
                            Expression.Constant(0L),
-                           Expression.Add(Expression.Constant((long)IntPtr.Size * 2 + 6), Expression.Convert(Expression.Multiply(Expression.Constant(2), Expression.Property(access, "Length")), typeof(long)))
+                           Expression.Condition(
+                               Expression.Equal(Expression.Property(access, "Length"), Expression.Constant(0)),
+                               Expression.Constant(0L),
+                                Expression.Convert(
+                                    Expression.And(Expression.Constant(0b11111000),
+                                        Expression.Add(Expression.Constant(IntPtr.Size * 4), Expression.Multiply(Expression.Constant(2), Expression.Property(access, "Length")))
+                                        ),
+                                    typeof(long))
+                             )
                            );
                 }
 
