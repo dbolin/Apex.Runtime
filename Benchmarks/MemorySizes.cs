@@ -16,7 +16,7 @@ namespace Benchmarks
         [GlobalSetup]
         public void Init()
         {
-            _memory = new Memory(false);
+            _memory = new Memory(Memory.Mode.Graph);
             _intArray = new int[Count];
             _isd = ImmutableSortedDictionary<int, int>.Empty;
             for(int i=0;i<Count;++i)
