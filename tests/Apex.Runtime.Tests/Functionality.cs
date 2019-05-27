@@ -37,7 +37,7 @@ namespace Apex.Runtime.Tests
 
         public Functionality()
         {
-            sut = new Memory(true);
+            sut = new Memory(Memory.Mode.Graph);
         }
 
         private void ExactSize<T>(Func<T> func, int adjustment = 0)
@@ -182,7 +182,7 @@ namespace Apex.Runtime.Tests
         [Fact]
         public void Tree()
         {
-            var sut2 = new Memory(false);
+            var sut2 = new Memory(Memory.Mode.Tree);
             var o = new SealedC();
             sut2.SizeOf(new { a = o, b = o, c = o }).Should().Be(112);
         }
