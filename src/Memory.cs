@@ -29,6 +29,7 @@ namespace Apex.Runtime
         private Type? _lastType;
 
         private readonly DictionarySlim<object, int>? _objectLookup;
+        private readonly HashSet<string> _stringLookup;
         private readonly Stack<ObjectDetails>? _objectDetails;
         private ObjectDetails? _currentDetail;
 
@@ -37,6 +38,7 @@ namespace Apex.Runtime
             if(mode == Mode.Graph || mode == Mode.Detailed)
             {
                 _objectLookup = new DictionarySlim<object, int>();
+                _stringLookup = new HashSet<string>(StringComparer.Ordinal);
             }
 
             if(mode == Mode.Detailed)
@@ -64,6 +66,7 @@ namespace Apex.Runtime
             finally
             {
                 _objectLookup?.Clear();
+                _stringLookup?.Clear();
             }
         }
 
@@ -187,13 +190,24 @@ namespace Apex.Runtime
 
             if (!Type<T>.IsValueType && _objectLookup != null)
             {
-                ref int x = ref _objectLookup.GetOrAddValueRef(obj);
-                if (x != 0)
+                if (typeof(T) == typeof(string))
                 {
-                    return 0;
+                    var s = (string)(object)obj;
+                    if (!_stringLookup.Add(s))
+                    {
+                        return 0;
+                    }
                 }
+                else
+                {
+                    ref int x = ref _objectLookup.GetOrAddValueRef(obj);
+                    if (x != 0)
+                    {
+                        return 0;
+                    }
 
-                x = 1;
+                    x = 1;
+                }
             }
 
             var method = Sizes<T>.Method;

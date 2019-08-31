@@ -59,7 +59,23 @@ namespace Apex.Runtime
                 }
                 else
                 {
-                    if (type.IsArray)
+                    if (type == typeof(string))
+                    {
+                        statements.Add(Expression.AddAssign(result, Expression.Condition(
+                               Expression.ReferenceEqual(castedSource, Expression.Constant(null)),
+                               Expression.Constant(0L),
+                               Expression.Condition(
+                                   Expression.Equal(Expression.Property(castedSource, "Length"), Expression.Constant(0)),
+                                   Expression.Constant(0L),
+                                    Expression.Convert(
+                                        Expression.And(Expression.Constant(0b11111000),
+                                            Expression.Add(Expression.Constant(IntPtr.Size * 4), Expression.Multiply(Expression.Constant(2), Expression.Property(castedSource, "Length")))
+                                            ),
+                                        typeof(long))
+                                 )
+                               )));
+                    }
+                    else if (type.IsArray)
                     {
                         statements.Add(Expression.AddAssign(result, Expression.Constant((long)IntPtr.Size * 3)));
                         var elementType = type.GetElementType();
@@ -186,23 +202,6 @@ namespace Apex.Runtime
 
             private static Expression? GetSpecificSizeExpression(Type type, Expression memory, Expression access)
             {
-                if (type == typeof(string))
-                {
-                    return Expression.Condition(
-                           Expression.ReferenceEqual(access, Expression.Constant(null)),
-                           Expression.Constant(0L),
-                           Expression.Condition(
-                               Expression.Equal(Expression.Property(access, "Length"), Expression.Constant(0)),
-                               Expression.Constant(0L),
-                                Expression.Convert(
-                                    Expression.And(Expression.Constant(0b11111000),
-                                        Expression.Add(Expression.Constant(IntPtr.Size * 4), Expression.Multiply(Expression.Constant(2), Expression.Property(access, "Length")))
-                                        ),
-                                    typeof(long))
-                             )
-                           );
-                }
-
                 if (typeof(Task).IsAssignableFrom(type) || type == typeof(ValueTask) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ValueTask<>)))
                 {
                     var resultProperty = type.GetProperty("Result");
