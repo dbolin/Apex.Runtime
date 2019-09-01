@@ -98,6 +98,18 @@ namespace Apex.Runtime.Tests
         }
 
         [Fact]
+        public void MultipleNewStrings()
+        {
+            ExactSize(() =>
+            {
+                var a = new string(' ', 10);
+                var b = new string(' ', 10);
+                var x = new[] { a, b };
+                return x;
+            });
+        }
+
+        [Fact]
         public void Array()
         {
             ExactSize(() => new int[4]);

@@ -38,7 +38,7 @@ namespace Apex.Runtime
             if(mode == Mode.Graph || mode == Mode.Detailed)
             {
                 _objectLookup = new DictionarySlim<object, int>();
-                _stringLookup = new HashSet<string>(StringComparer.Ordinal);
+                _stringLookup = new HashSet<string>(new StringReferenceComparer());
             }
 
             if(mode == Mode.Detailed)
