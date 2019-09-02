@@ -156,6 +156,11 @@ namespace Apex.Runtime
 
             private static bool HasNoReferences(Type elementType)
             {
+                if(!elementType.IsSealed || elementType.IsInterface || elementType.IsAbstract)
+                {
+                    return false;
+                }
+
                 if (elementType == typeof(string))
                 {
                     return false;

@@ -1,6 +1,7 @@
 using FluentAssertions;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
@@ -59,7 +60,7 @@ namespace Apex.Runtime.Tests
         }
 
         [Fact]
-        public void Test1()
+        public void TestNested()
         {
             sut.SizeOf<string>(null).Should().Be(8);
 
@@ -117,6 +118,40 @@ namespace Apex.Runtime.Tests
             ExactSize(() => new string[0]);
 
             ExactSize(() => new[] { new string(' ', 1), null, null });
+        }
+
+        [Fact]
+        public void BoxedValues()
+        {
+            var x = 4;
+            var obj = (object)x;
+            ExactSize(() => obj, 4);
+            ExactSize(() =>
+            {
+                var y = new object[] { obj };
+                return y;
+            }, 4);
+        }
+
+        public class Test1
+        {
+            int A;
+        }
+
+        public class Test1B : Test1
+        {
+            int B;
+        }
+
+        [Fact]
+        public void ObjectArray()
+        {
+            ExactSize(() =>
+            {
+                var x = new Test1B();
+                var y = new object[] { x, x, x, x };
+                return y;
+            });
         }
 
         [Fact]

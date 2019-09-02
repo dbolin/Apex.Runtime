@@ -9,7 +9,7 @@
 
   <PropertyGroup>
     <PackageId>Apex.Runtime</PackageId>
-    <PackageVersion>1.1.1</PackageVersion>
+    <PackageVersion>1.1.2</PackageVersion>
     <Authors>Dominic Bolin</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/dbolin/Apex.Runtime</PackageProjectUrl>
