@@ -28,8 +28,7 @@ namespace Apex.Runtime
         private Func<object, Memory, long>? _lastMethod;
         private Type? _lastType;
 
-        private readonly DictionarySlim<object, int>? _objectLookup;
-        private readonly HashSet<string> _stringLookup;
+        private readonly HashSet<object>? _objectLookup;
         private readonly Stack<ObjectDetails>? _objectDetails;
         private ObjectDetails? _currentDetail;
 
@@ -37,8 +36,7 @@ namespace Apex.Runtime
         {
             if(mode == Mode.Graph || mode == Mode.Detailed)
             {
-                _objectLookup = new DictionarySlim<object, int>();
-                _stringLookup = new HashSet<string>(new StringReferenceComparer());
+                _objectLookup = new HashSet<object>(new ObjectReferenceComparer());
             }
 
             if(mode == Mode.Detailed)
@@ -66,7 +64,6 @@ namespace Apex.Runtime
             finally
             {
                 _objectLookup?.Clear();
-                _stringLookup?.Clear();
             }
         }
 
@@ -103,13 +100,10 @@ namespace Apex.Runtime
 
             if (_objectLookup != null)
             {
-                ref int x = ref _objectLookup.GetOrAddValueRef(obj);
-                if (x != 0)
+                if(!_objectLookup.Add(obj))
                 {
                     return 0;
                 }
-
-                x = 1;
             }
 
             if (_objectDetails == null)
@@ -190,23 +184,9 @@ namespace Apex.Runtime
 
             if (!Type<T>.IsValueType && _objectLookup != null)
             {
-                if (typeof(T) == typeof(string))
+                if(!_objectLookup.Add(obj))
                 {
-                    var s = (string)(object)obj;
-                    if (!_stringLookup.Add(s))
-                    {
-                        return 0;
-                    }
-                }
-                else
-                {
-                    ref int x = ref _objectLookup.GetOrAddValueRef(obj);
-                    if (x != 0)
-                    {
-                        return 0;
-                    }
-
-                    x = 1;
+                    return 0;
                 }
             }
 

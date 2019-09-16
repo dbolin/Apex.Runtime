@@ -36,6 +36,27 @@ namespace Apex.Runtime.Tests
             public TestLoop y;
         }
 
+        public class CustomEquality : IEquatable<CustomEquality>
+        {
+            public int A;
+
+            public override bool Equals(object obj)
+            {
+                return Equals(obj as CustomEquality);
+            }
+
+            public bool Equals(CustomEquality other)
+            {
+                return other != null &&
+                       A == other.A;
+            }
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(A);
+            }
+        }
+
         public Functionality()
         {
             sut = new Memory(Memory.Mode.Graph);
@@ -165,7 +186,7 @@ namespace Apex.Runtime.Tests
         [Fact]
         public void Dictionary()
         {
-            ExactSize(() => new Dictionary<int, int>(100), -4);            
+            ExactSize(() => new Dictionary<int, int>(100), -4);
         }
 
         [Fact]
@@ -243,6 +264,17 @@ namespace Apex.Runtime.Tests
             var sut2 = new Memory(Memory.Mode.Tree);
             var o = new SealedC();
             sut2.SizeOf(new { a = o, b = o, c = o }).Should().Be(112);
+        }
+
+        [Fact]
+        public void CustomEqualityComparer()
+        {
+            ExactSize(() =>
+            {
+                var x = new CustomEquality();
+                var y = new CustomEquality();
+                return new[] { x, y };
+            });
         }
     }
 
