@@ -83,7 +83,7 @@ namespace Apex.Runtime.Tests
         [Fact]
         public void TestNested()
         {
-            sut.SizeOf<string>(null).Should().Be(8);
+            sut.SizeOf<string>(null).Should().Be(4);
 
             var x = new Test { Test2 = new Test2 { Test3 = new Test3 { } } };
 
@@ -186,7 +186,7 @@ namespace Apex.Runtime.Tests
         [Fact]
         public void Dictionary()
         {
-            ExactSize(() => new Dictionary<int, int>(100), -4);
+            ExactSize(() => new Dictionary<int, int>(100));
         }
 
         [Fact]
@@ -227,23 +227,23 @@ namespace Apex.Runtime.Tests
         [Fact]
         public void Tasks()
         {
-            sut.SizeOf(Task.CompletedTask).Should().Be(64);
+            sut.SizeOf(Task.CompletedTask).Should().Be(41);
 
-            sut.SizeOf(Task.Delay(1)).Should().Be(105);
+            sut.SizeOf(Task.Delay(1)).Should().Be(40);
 
-            sut.SizeOf(Task.FromResult(4)).Should().Be(76);
+            sut.SizeOf(Task.FromResult(4)).Should().Be(44);
 
-            sut.SizeOf(Task.FromResult(4L)).Should().Be(80);
+            sut.SizeOf(Task.FromResult(4L)).Should().Be(52);
         }
 
         [Fact]
         public void ValueTasks()
         {
-            sut.SizeOf(new ValueTask()).Should().Be(16);
+            sut.SizeOf(new ValueTask()).Should().Be(8);
 
-            sut.SizeOf(new ValueTask<int>(4)).Should().Be(20);
+            sut.SizeOf(new ValueTask<int>(4)).Should().Be(16);
 
-            sut.SizeOf(new ValueTask(Task.Delay(1))).Should().Be(121);
+            sut.SizeOf(new ValueTask(Task.Delay(1))).Should().Be(48);
         }
 
         private sealed class SealedC { }
@@ -263,7 +263,9 @@ namespace Apex.Runtime.Tests
         {
             var sut2 = new Memory(Memory.Mode.Tree);
             var o = new SealedC();
-            sut2.SizeOf(new { a = o, b = o, c = o }).Should().Be(112);
+            sut2.SizeOf(new { a = o }).Should().Be(24);
+            sut2.SizeOf(new { a = o, b = o }).Should().Be(40);
+            sut2.SizeOf(new { a = o, b = o, c = o }).Should().Be(56);
         }
 
         [Fact]

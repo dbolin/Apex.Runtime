@@ -68,7 +68,7 @@ namespace Apex.Runtime
                                    Expression.Equal(Expression.Property(castedSource, "Length"), Expression.Constant(0)),
                                    Expression.Constant(0L),
                                     Expression.Convert(
-                                        Expression.And(Expression.Constant(0b11111000),
+                                        Expression.And(Expression.Constant(0b11111100),
                                             Expression.Add(Expression.Constant(IntPtr.Size * 4), Expression.Multiply(Expression.Constant(2), Expression.Property(castedSource, "Length")))
                                             ),
                                         typeof(long))
